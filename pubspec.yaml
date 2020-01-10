@@ -1,8 +1,9 @@
 name: pda_scan
 description: A new Flutter plugin.
-version: 0.0.1
-author: luogang@missfresh.cn
+version: 0.0.2
 homepage: https://github.com/zeuscode
+repository: https://github.com/zeuscode/PdaScan.git
+
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
@@ -10,10 +11,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  meta: ^1.0.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

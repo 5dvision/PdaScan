@@ -182,7 +182,9 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
                                 this.scanResultByPhone.success(barcode);
                             }
                         }else{
-                            this.scanResultByPhone.success(null);
+                            if (this.scanResultByPhone!=null) {
+                                this.scanResultByPhone.success(null);
+                            }
                         }
                     }
                 }
