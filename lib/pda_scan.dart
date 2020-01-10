@@ -9,13 +9,25 @@ class PdaScan {
   final EventChannel _eventChannel;
   Stream<String> _onScanString;
 
+  static const MethodChannel methodChannel = const MethodChannel("plugins.flutter.io/missfresh.scan.device");
 
   factory PdaScan(){
     if(_instance == null) {
-      final EventChannel eventChannel = const EventChannel("plugins.flutter.io/missfresh.scan");
-      _instance = PdaScan.private(eventChannel);
+      if(isPDA == true) {
+        final EventChannel eventChannel = const EventChannel(
+            "plugins.flutter.io/missfresh.scan");
+        _instance = PdaScan.private(eventChannel);
+      }
     }
     return _instance;
+  }
+
+  static Future<bool> get isPDA async {
+     return await methodChannel.invokeMethod('isPDA');
+  }
+  
+  static Future<String> get scanResult async {
+    return await methodChannel.invokeMethod("scan");
   }
 
   @visibleForTesting
@@ -27,5 +39,7 @@ class PdaScan {
     }
     return _onScanString;
   }
+
+
 
 }

@@ -1,6 +1,6 @@
 package com.missfresh.pda_scan;
 
-import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -9,28 +9,35 @@ import android.device.ScanManager;
 import android.device.scanner.configuration.PropertyID;
 import android.media.AudioManager;
 import android.media.SoundPool;
+import android.os.Build;
+import android.os.Bundle;
 import android.os.Vibrator;
 import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
-import io.flutter.BuildConfig;
+import com.uuzuche.lib_zxing.activity.CodeUtils;
+
 import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.embedding.engine.plugins.activity.ActivityAware;
+import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
+
+import static com.uuzuche.lib_zxing.activity.CodeUtils.RESULT_TYPE;
+import static com.uuzuche.lib_zxing.activity.CodeUtils.RESULT_SUCCESS;
 
 
 /**
  * PdaScanPlugin
  */
-public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler {
+public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,MethodChannel.MethodCallHandler , PluginRegistry.ActivityResultListener, ActivityAware {
 
     private Context applicationContext;
     private BroadcastReceiver scanResultReceiver;
@@ -39,6 +46,11 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler 
     private Vibrator mVibrator;
     private SoundPool soundpool;
     private int soundId;
+    private MethodChannel methChannel;
+    private Result scanResultByPhone;
+    private Activity activity;
+    private int REQUEST_CODE = 100;
+    public static final String TAG = PdaScanPlugin.class.getSimpleName();
 
     @Override
     public void onAttachedToEngine(FlutterPluginBinding binding) {
@@ -48,13 +60,16 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler 
     private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
         this.applicationContext = applicationContext;
         eventChannel = new EventChannel(messenger, "plugins.flutter.io/missfresh.scan");
+        methChannel = new MethodChannel(messenger,"plugins.flutter.io/missfresh.scan.device");
         eventChannel.setStreamHandler(this);
+        methChannel.setMethodCallHandler(this);
     }
 
 
     public static void registerWith(Registrar registrar) {
         final PdaScanPlugin instance = new PdaScanPlugin();
         instance.onAttachedToEngine(registrar.context(), registrar.messenger());
+        registrar.addActivityResultListener(instance);
     }
 
     @Override
@@ -62,6 +77,7 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler 
         applicationContext = null;
         eventChannel.setStreamHandler(null);
         eventChannel = null;
+
     }
 
 
@@ -121,6 +137,84 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler 
             mScanManager.closeScanner();
             mScanManager.switchOutputMode(1);
         }
+
+    }
+
+    @Override
+    public void onMethodCall(MethodCall call, Result result) {
+        this.scanResultByPhone = result;
+        if (call.method.equals("scan")){
+            CheckPermissionUtils.initPermission(activity);
+            showBarcodeView();
+        }
+        else if (call.method.equals("isPDA")){
+            if ("qcom".equals(Build.BOARD)) {
+                scanResultByPhone.success(true);
+            }else{
+                scanResultByPhone.success(false);
+            }
+        }
+    }
+
+    private void showBarcodeView() {
+        Intent intent = new Intent(activity, ScanViewActivity.class);
+        activity.startActivityForResult(intent, REQUEST_CODE);
+    }
+
+    @Override
+    public boolean onActivityResult(int requestCode, int resultCode, Intent intent) {
+        if (requestCode == REQUEST_CODE) {
+            if (resultCode == Activity.RESULT_OK && intent != null) {
+                Bundle secondBundle = intent.getBundleExtra("secondBundle");
+                if (secondBundle != null) {
+                    try {
+                        CodeUtils.AnalyzeCallback analyzeCallback = new CustomAnalyzeCallback(this.scanResultByPhone, intent);
+                        CodeUtils.analyzeBitmap(secondBundle.getString("path"), analyzeCallback);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    Bundle bundle = intent.getExtras();
+                    if (bundle != null) {
+                        if (bundle.getInt(RESULT_TYPE) == RESULT_SUCCESS) {
+                            String barcode = bundle.getString(CodeUtils.RESULT_STRING);
+                            if (scanResultByPhone!=null && !TextUtils.isEmpty(barcode)) {
+                                this.scanResultByPhone.success(barcode);
+                            }
+                        }else{
+                            this.scanResultByPhone.success(null);
+                        }
+                    }
+                }
+            } else {
+                String errorCode = intent != null ? intent.getStringExtra("ERROR_CODE") : null;
+                if (errorCode != null) {
+                    this.scanResultByPhone.error(errorCode, null, null);
+                }
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public void onAttachedToActivity(ActivityPluginBinding binding) {
+        binding.addActivityResultListener(this);
+        this.activity = binding.getActivity();
+
+    }
+
+    @Override
+    public void onDetachedFromActivityForConfigChanges() {
+
+    }
+
+    @Override
+    public void onReattachedToActivityForConfigChanges(ActivityPluginBinding binding) {
+        binding.removeActivityResultListener(this);
+    }
+
+    @Override
+    public void onDetachedFromActivity() {
 
     }
 }

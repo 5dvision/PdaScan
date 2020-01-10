@@ -1,3 +1,8 @@
 ## 0.0.1
 
-* This is scan flutter scan for UROVO i6200A mobile device.
+* 支持优博讯的PDA的扫描Flutter 差劲
+
+## 0.0.2
+
+* 支持手机的扫描
+* 可以判断手机还是PDA，开启不通的扫描的策略
