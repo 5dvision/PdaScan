@@ -11,10 +11,10 @@ A Flutter plugin to access scan function on urovo i6s200 device
 ```
 import 'package:pda_scan/pda_scan.dart';
 
-    //Instantiate it
-    var _pdaScan = PdaScan();
+//Instantiate it
+var _pdaScan = PdaScan();
 
-    _pdaScan.onScanResult.listen((String code){
+_pdaScan.onScanResult.listen((String code){
         // DO something with result code
-    });
+});
 ```

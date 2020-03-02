@@ -1,6 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pda_scan/pda_scan.dart';
 
 void main() {
   const MethodChannel channel = MethodChannel('pda_scan');

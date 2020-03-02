@@ -37,9 +37,9 @@ android {
 }
 
 dependencies {
-    implementation files('libs/platform_sdk_v2.4.0810.jar')
     implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'com.google.android.material:material:1.0.0'
     implementation 'pub.devrel:easypermissions:0.2.0'
     implementation 'com.github.leyan95:android-zxingLibrary:0.1.2-PRE'
+    implementation files('libs/platform_sdk_v4.0.0802.jar')
 }

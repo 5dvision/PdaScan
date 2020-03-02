@@ -4,42 +4,39 @@ import 'package:flutter/services.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
 
 class PdaScan {
-
   static PdaScan _instance;
   final EventChannel _eventChannel;
+  final MethodChannel _methodChannel;
   Stream<String> _onScanString;
 
-  static const MethodChannel methodChannel = const MethodChannel("plugins.flutter.io/missfresh.scan.device");
-
-  factory PdaScan(){
-    if(_instance == null) {
-      if(isPDA == true) {
-        final EventChannel eventChannel = const EventChannel(
-            "plugins.flutter.io/missfresh.scan");
-        _instance = PdaScan.private(eventChannel);
-      }
+  factory PdaScan() {
+    if (_instance == null) {
+      final EventChannel eventChannel =
+      const EventChannel("plugins.flutter.io/missfresh.scan");
+      final MethodChannel methodChannel =
+      const MethodChannel("plugins.flutter.io/missfresh.qrcode");
+      _instance = PdaScan.private(eventChannel, methodChannel);
     }
     return _instance;
   }
 
-  static Future<bool> get isPDA async {
-     return await methodChannel.invokeMethod('isPDA');
+  Future<bool> get isPDA {
+    return _methodChannel.invokeMethod('isPDA');
   }
-  
-  static Future<String> get scanResult async {
-    return await methodChannel.invokeMethod("scan");
+
+  Future<String> get scanResult {
+    return _methodChannel.invokeMethod("scan");
   }
 
   @visibleForTesting
-  PdaScan.private(this._eventChannel);
+  PdaScan.private(this._eventChannel, this._methodChannel);
 
   Stream<String> get onScanResult {
     if (_onScanString == null) {
-      _onScanString = _eventChannel.receiveBroadcastStream().map((dynamic event) => event.toString());
+      _onScanString = _eventChannel
+          .receiveBroadcastStream()
+          .map((dynamic event) => event.toString());
     }
     return _onScanString;
   }
-
-
-
 }

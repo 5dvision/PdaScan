@@ -6,11 +6,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.device.ScanManager;
-import android.device.scanner.configuration.PropertyID;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.text.TextUtils;
 import android.util.Log;
@@ -37,20 +37,22 @@ import static com.uuzuche.lib_zxing.activity.CodeUtils.RESULT_SUCCESS;
 /**
  * PdaScanPlugin
  */
-public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,MethodChannel.MethodCallHandler , PluginRegistry.ActivityResultListener, ActivityAware {
+public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler, MethodChannel.MethodCallHandler, PluginRegistry.ActivityResultListener, ActivityAware {
 
     private Context applicationContext;
     private BroadcastReceiver scanResultReceiver;
     private EventChannel eventChannel;
-    private ScanManager mScanManager;
     private Vibrator mVibrator;
     private SoundPool soundpool;
     private int soundId;
-    private MethodChannel methChannel;
+    private MethodChannel methodChannel;
     private Result scanResultByPhone;
     private Activity activity;
     private int REQUEST_CODE = 100;
-    public static final String TAG = PdaScanPlugin.class.getSimpleName();
+    public static final String ACTION_DECODE = "android.intent.ACTION_DECODE_DATA";
+    private ScanManager scanManager;
+    private Handler handler = new Handler();
+    public static final String TAG = "PdaScanPlugin";
 
     @Override
     public void onAttachedToEngine(FlutterPluginBinding binding) {
@@ -60,9 +62,11 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
     private void onAttachedToEngine(Context applicationContext, BinaryMessenger messenger) {
         this.applicationContext = applicationContext;
         eventChannel = new EventChannel(messenger, "plugins.flutter.io/missfresh.scan");
-        methChannel = new MethodChannel(messenger,"plugins.flutter.io/missfresh.scan.device");
+        methodChannel = new MethodChannel(messenger, "plugins.flutter.io/missfresh.qrcode");
         eventChannel.setStreamHandler(this);
-        methChannel.setMethodCallHandler(this);
+        methodChannel.setMethodCallHandler(this);
+
+
     }
 
 
@@ -80,26 +84,22 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
 
     }
 
-
-    private void initScanManager(Context context) throws Exception {
-        mScanManager = new ScanManager();
-        mScanManager.openScanner();
-        mScanManager.switchOutputMode(0);
+    private void init(Context context) {
         mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
         soundpool = new SoundPool(1, AudioManager.STREAM_NOTIFICATION, 100);
-        soundId = soundpool.load("/etc/Scan_new.ogg", 1);
+        try {
+            soundId = soundpool.load("/etc/Scan_new.ogg", 1);
+        }catch (Exception e){
+            Log.e(TAG,"该设备系统下没有Scan_new.ogg资源");
+        }
     }
 
     private BroadcastReceiver createScanStateChangeReceiver(final EventChannel.EventSink events) {
         return new BroadcastReceiver() {
             public void onReceive(Context context, Intent intent) {
                 soundpool.play(soundId, 1, 1, 0, 0, 1);
-                //回调播放声音和抖动
                 mVibrator.vibrate(100);
-                byte[] barcode = intent.getByteArrayExtra(ScanManager.DECODE_DATA_TAG);
-                int barcodelen = intent.getIntExtra(ScanManager.BARCODE_LENGTH_TAG, 0);
-                String scanString = new String(barcode, 0, barcodelen);
-                String code = DecodeUtils.getSvStr(scanString.trim());
+                String code = intent.getStringExtra("barcode_string");
                 events.success(code);
             }
         };
@@ -107,11 +107,7 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
 
     @Override
     public void onListen(Object arguments, EventChannel.EventSink events) {
-        try {
-            initScanManager(applicationContext);
-        } catch (Exception e) {
-            events.error("996", "Device does not support scanning", null);
-        }
+        init(activity);
         scanResultReceiver = createScanStateChangeReceiver(events);
         applicationContext.registerReceiver(
                 scanResultReceiver, getIntentFilter());
@@ -119,13 +115,8 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
 
     private IntentFilter getIntentFilter() {
         IntentFilter filter = new IntentFilter();
-        int[] buffer = new int[]{PropertyID.WEDGE_INTENT_ACTION_NAME, PropertyID.WEDGE_INTENT_DATA_STRING_TAG};
-        String[] value_buf = mScanManager.getParameterString(buffer);
-        if (value_buf != null && value_buf[0] != null && !value_buf[0].equals("")) {
-            filter.addAction(value_buf[0]);
-        } else {
-            filter.addAction(ScanManager.ACTION_DECODE);
-        }
+        filter.addAction("android.intent.ACTION_DECODE_DATA");
+        filter.setPriority(Integer.MAX_VALUE);
         return filter;
     }
 
@@ -133,24 +124,17 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
     public void onCancel(Object arguments) {
         applicationContext.unregisterReceiver(scanResultReceiver);
         scanResultReceiver = null;
-        if (mScanManager != null) {
-            mScanManager.closeScanner();
-            mScanManager.switchOutputMode(1);
-        }
-
     }
 
     @Override
     public void onMethodCall(MethodCall call, Result result) {
         this.scanResultByPhone = result;
-        if (call.method.equals("scan")){
-            CheckPermissionUtils.initPermission(activity);
+        if (call.method.equals("scan")) {
             showBarcodeView();
-        }
-        else if (call.method.equals("isPDA")){
-            if ("qcom".equals(Build.BOARD)) {
+        } else if (call.method.equals("isPDA")) {
+            if ("qcom".equals(Build.BRAND)) {
                 scanResultByPhone.success(true);
-            }else{
+            } else {
                 scanResultByPhone.success(false);
             }
         }
@@ -178,11 +162,11 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
                     if (bundle != null) {
                         if (bundle.getInt(RESULT_TYPE) == RESULT_SUCCESS) {
                             String barcode = bundle.getString(CodeUtils.RESULT_STRING);
-                            if (scanResultByPhone!=null && !TextUtils.isEmpty(barcode)) {
+                            if (scanResultByPhone != null && !TextUtils.isEmpty(barcode)) {
                                 this.scanResultByPhone.success(barcode);
                             }
-                        }else{
-                            if (this.scanResultByPhone!=null) {
+                        } else {
+                            if (this.scanResultByPhone != null) {
                                 this.scanResultByPhone.success(null);
                             }
                         }
@@ -202,6 +186,21 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
     public void onAttachedToActivity(ActivityPluginBinding binding) {
         binding.addActivityResultListener(this);
         this.activity = binding.getActivity();
+        CheckPermissionUtils.initPermission(activity);
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (scanManager == null)
+                        scanManager = new ScanManager();
+                    scanManager.switchOutputMode(0);
+                } catch (Exception e) {
+                    Log.e(TAG, "该设备不支持红外扫描");
+                }
+
+            }
+        });
+
 
     }
 
@@ -217,6 +216,19 @@ public class PdaScanPlugin implements FlutterPlugin,EventChannel.StreamHandler,M
 
     @Override
     public void onDetachedFromActivity() {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (scanManager == null)
+                        scanManager = new ScanManager();
+                    scanManager.switchOutputMode(1);
+                } catch (Exception e) {
+                    Log.e(TAG, "该设备不支持红外扫描");
+                }
+
+            }
+        });
 
     }
 }
