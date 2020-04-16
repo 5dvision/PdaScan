@@ -236,6 +236,7 @@ __strong __typeof(&*weakSelf)self = weakSelf;
     self.torchButton.backgroundColor = [UIColor clearColor];
     [self.scanView addSubview:self.torchButton];
     [self.scanView bringSubviewToFront:self.torchButton];
+    [self.torchButton addTarget:self action:@selector(torchButtonClick) forControlEvents:UIControlEventTouchUpInside];
     
     [self.torchButton mas_makeConstraints:^(MASConstraintMaker *make) {
         make.size.mas_equalTo(CGSizeMake(100, 60));
