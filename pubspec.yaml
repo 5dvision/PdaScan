@@ -1,6 +1,7 @@
+
 name: pda_scan
 description: A new Flutter plugin.
-version: 0.1.4
+version: 0.1.5
 homepage: https://github.com/zeuscode
 repository: https://github.com/zeuscode/PdaScan.git
 

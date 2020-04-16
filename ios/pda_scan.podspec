@@ -1,11 +1,4 @@
-/*
- * @Author: your name
- * @Date: 2020-04-16 16:03:40
- * @LastEditTime: 2020-04-16 16:21:34
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: /PdaScan/ios/pda_scan.podspec
- */
+
 #
 # To learn more about a Podspec see http://guides.cocoapods.org/syntax/podspec.html.
 # Run `pod lib lint pda_scan.podspec' to validate before publishing.
