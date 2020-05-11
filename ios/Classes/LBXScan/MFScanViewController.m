@@ -152,11 +152,9 @@ __strong __typeof(&*weakSelf)self = weakSelf;
                              
                              cropRect.size.width/(size.width+20));
     
-    NSArray *objectTypes = @[AVMetadataObjectTypeQRCode,
-                             AVMetadataObjectTypeCode128Code];
     
     weakifySelf
-    self.scanNative = [[LBXScanNative alloc] initWithPreView:self.contentView ObjectType:objectTypes    cropRect:rect success:^(NSArray<LBXScanResult *> *array) {
+    self.scanNative = [[LBXScanNative alloc] initWithPreView:self.contentView ObjectType:nil  cropRect:rect success:^(NSArray<LBXScanResult *> *array) {
         strongifySelf
         LBXScanResult *scanResult = array[0];
         NSString*strResult = scanResult.strScanned;
