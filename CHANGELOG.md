@@ -1,3 +1,11 @@
+<!--
+ * @Author: your name
+ * @Date: 2020-04-16 18:33:36
+ * @LastEditTime: 2020-05-11 12:34:34
+ * @LastEditors: Please set LastEditors
+ * @Description: In User Settings Edit
+ * @FilePath: /PdaScan/CHANGELOG.md
+ -->
 ## 0.0.1
 
 * 支持优博讯的PDA的扫描Flutter插件
@@ -42,3 +50,7 @@
 ## 0.1.7
 
 * 修复ios无法打包问题
+
+## 0.1.9
+
+* ios增加多类型扫码识别
