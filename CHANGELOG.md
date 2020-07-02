@@ -51,6 +51,10 @@
 
 * 修复ios无法打包问题
 
-## 0.1.9
+## 0.1.10
 
 * ios增加多类型扫码识别
+
+## 0.1.11
+
+* 重新增加了查询扫描状态switchModelStatus 和切换switchModel

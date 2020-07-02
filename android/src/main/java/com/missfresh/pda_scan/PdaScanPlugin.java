@@ -137,6 +137,11 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler,
             } else {
                 scanResultByPhone.success(false);
             }
+        }else if(call.method.equals("switchModelStatus")){
+            if(scanManager!=null)
+            this.scanResultByPhone.success(scanManager.getOutputMode());
+        }else if(call.method.equals("switchModel")){
+            changeScanMode(0);
         }
     }
 
@@ -187,13 +192,19 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler,
         binding.addActivityResultListener(this);
         this.activity = binding.getActivity();
         CheckPermissionUtils.initPermission(activity);
+        changeScanMode(0);
+
+
+    }
+
+    private void changeScanMode(final int i) {
         handler.post(new Runnable() {
             @Override
             public void run() {
                 try {
                     if (scanManager == null)
                         scanManager = new ScanManager();
-                    scanManager.switchOutputMode(0);
+                    scanManager.switchOutputMode(i);
                 } catch (Exception e) {
                     Log.e(TAG, "该设备不支持红外扫描");
                 }
@@ -201,8 +212,8 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler,
             }
         });
 
-
     }
+
 
     @Override
     public void onDetachedFromActivityForConfigChanges() {
@@ -216,19 +227,7 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler,
 
     @Override
     public void onDetachedFromActivity() {
-        handler.post(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (scanManager == null)
-                        scanManager = new ScanManager();
-                    scanManager.switchOutputMode(1);
-                } catch (Exception e) {
-                    Log.e(TAG, "该设备不支持红外扫描");
-                }
-
-            }
-        });
+        changeScanMode(1);
 
     }
 }
