@@ -24,16 +24,21 @@ class PdaScan {
     return _methodChannel.invokeMethod('isPDA');
   }
 
-  Future<bool> get scanModel{
-    return _methodChannel.invokeMethod('isPDA');
-  }
-
   Future<String> get scanResult {
-    return _methodChannel.invokeMethod("switchModelStatus");
+    return _methodChannel.invokeMethod("scan");
   }
 
-  Future<void> switchModel(){
-    return _methodChannel.invokeMethod('switchModel');
+
+  Future<String> get scanStatus {
+    return _methodChannel.invokeMethod("scanStatus");
+  }
+
+  Future<void> openBroadcastModel(){
+    return _methodChannel.invokeMethod('switchModel0');
+  }
+
+  Future<void> openInputModel(){
+    return _methodChannel.invokeMethod('switchModel1');
   }
 
   @visibleForTesting
