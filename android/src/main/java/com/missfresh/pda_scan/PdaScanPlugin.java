@@ -139,7 +139,7 @@ public class PdaScanPlugin implements FlutterPlugin, EventChannel.StreamHandler,
             }
         }else if(call.method.equals("scanStatus")){
             if(scanManager!=null)
-            this.scanResultByPhone.success(scanManager.getOutputMode());
+            this.scanResultByPhone.success(scanManager.getOutputMode()+"");
         }else if(call.method.equals("switchModel0")){
             changeScanMode(0);
         }else if(call.method.equals("switchModel1")){
